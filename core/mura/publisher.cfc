@@ -101,6 +101,12 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfset var themeDir="">
 		<cfset var doFindAndReplace=false>
 
+		<!--- If bundle is content only (i.e. does not have structured assets), make sure keyMode is set to publish --->
+		<cfset hasStructuredAssets = arguments.Bundle.getValue("rsthasstructuredassets") />
+		<cfif NOT hasStructuredAssets>
+			<cfset arguments.keyMode = "publish">
+		</cfif>
+
 		<cfsetting requestTimeout = "7200">
 
 		<cfif structKeyExists(arguments,"Bundle")>
@@ -231,7 +237,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 			<cfif isDefined("rssite.theme")>
 				<cfset themeDir=rssite.theme>
 			</cfif>
-			<cfset arguments.Bundle.unpackFiles( arguments.toSiteID,arguments.keyFactory,arguments.toDSN, arguments.moduleID, arguments.errors , arguments.renderingMode, arguments.contentMode, arguments.pluginMode, arguments.lastDeployment,arguments.keyMode,themeDir) />
+			<cfset arguments.Bundle.unpackFiles( arguments.toSiteID,arguments.keyFactory,arguments.toDSN, arguments.moduleID, arguments.errors , arguments.renderingMode, arguments.contentMode, arguments.pluginMode, arguments.lastDeployment,arguments.keyMode,hasStructuredAssets,themeDir) />
 
 			<cfif arguments.pluginMode neq "none">
 				<cfset getToWorkPlugins(argumentCollection=arguments)>
@@ -364,6 +370,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfset var rsthierarchy=""/>
 		<cfset var rstfiles=""/>
 		<cfset var rsthasmetadata=""/>
+		<cfset var rsthasstructuredassets=""/>
 		<cfset var importExtensions=""/>
 
 		<cfset var rstClassExtendData=""/>
@@ -406,6 +413,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfset rstfiles = arguments.Bundle.getValue("rstfiles")>
 		<cfset rstClassExtendData = arguments.Bundle.getValue("rstClassExtendData")>
 		<cfset rsthasmetadata = arguments.Bundle.getValue("rsthasmetadata")>
+		<cfset rststructuredassets = arguments.Bundle.getValue("rststructuredassets")>
 		<cfset rstContentTags = arguments.Bundle.getValue("rstContentTags")>
 
 		<cfquery name="rsObjects">
