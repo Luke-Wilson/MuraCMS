@@ -101,8 +101,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfset var themeDir="">
 		<cfset var doFindAndReplace=false>
 
-		<!--- If bundle is content only (i.e. does not have structured assets), make sure keyMode is set to publish --->
-		<cfset hasStructuredAssets = arguments.Bundle.getValue("rsthasstructuredassets") />
+		<cfset hasStructuredAssets = arguments.Bundle.getValue("hasstructuredassets") />
 		<cfif NOT hasStructuredAssets>
 			<cfset arguments.keyMode = "publish">
 		</cfif>
