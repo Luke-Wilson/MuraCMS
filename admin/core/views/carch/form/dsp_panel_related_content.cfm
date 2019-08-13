@@ -46,7 +46,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 <cfset relatedContentSets = subtype.getRelatedContentSets()>
 
 <cfoutput>
-	<div class="mura-panel panel">
+	<div class="mura-panel panel" id="tabRelatedcontent">
 		<div class="mura-panel-heading" role="tab" id="heading-relatedcontent">
 			<h4 class="mura-panel-title">
 				<a class="collapse collapsed" role="button" data-toggle="collapse" data-parent="##content-panels" href="##panel-relatedcontent" aria-expanded="false" aria-controls="panel-relatedcontent">#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.tabs.relatedcontent")#</a>
@@ -70,6 +70,10 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 					</div> <!--- /.bigui --->
 				</div>
 				<input id="relatedContentSetData" type="hidden" name="relatedContentSetData" value="" />	
+
+		   <span id="extendset-container-relatedcontent" class="extendset-container"></span>
+		   <span id="extendset-container-tabrelatedcontentbottom" class="extendset-container"></span>
+
 			</div>
 		</div>
 	</div> 
@@ -92,9 +96,9 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 
 					if (rcList.trim().length > 0){
 					<!--- todo: resource bundle values for text --->
-						$('#relcontent__selected').html('<label>Selected</label><ul>' + rcList + '</ul>');
+						$('#relcontent__selected').html('<label>Selected</label><div class="bigui__preview"><ul>' + rcList + '</ul></div>');
 					} else {
-						$('#relcontent__selected').html('<label>Selected</label><div>No related content selected</div>');
+						$('#relcontent__selected').html('<label>Selected</label><div class="bigui__preview"><div>No related content selected</div></div>');
 					}
 				}
 

@@ -9,7 +9,9 @@
 			<div id="mura-sidebar-objects" class="mura-sidebar__objects-list">
 			 	<div class="mura-sidebar__objects-list__object-group">
 					<div class="mura-sidebar__objects-list__object-group-heading">
-						<div class="mura-sidebar__objects-list__object-group-instruction">#application.rbFactory.getKeyValue(session.rb,'sitemanager.dragtopage')#:</div>
+						<!--- todo: rb key --->
+						<h1><i class="mi-th"></i>Modules</h1>
+<!--- 						<div class="mura-sidebar__objects-list__object-group-instruction">#application.rbFactory.getKeyValue(session.rb,'sitemanager.dragtopage')#:</div> --->
 					</div>
 					<div class="mura-sidebar__objects-list__object-group-items">
 						<cfset contentRendererUtility=$.getBean('contentRendererUtility')>
@@ -46,7 +48,7 @@
 						<cfif this.legacyobjects>
 							<button id="mura-objects-legacy-btn" class="btn mura-primary"><i class="mi-object-ungroup"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.legacyobjects')#</button>
 						</cfif>
-						<cfif listLen(request.muraActiveRegions) lt $.siteConfig('columnCount')>
+						<cfif listLen(request.muraActiveRegions) lt $.siteConfig('columnCount') || request.muraAPIRequest>
 							<button id="mura-objects-openregions-btn" class="btn"><i class="mi-columns"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.additionaldisplayregions')#</button>
 						</cfif>
 					</cfif>
@@ -127,7 +129,7 @@
 	</div>
 
 </div>
-<cfif listLen(request.muraActiveRegions) lt $.siteConfig('columnCount')>
+<cfif listLen(request.muraActiveRegions) lt $.siteConfig('columnCount') || request.muraAPIRequest>
 	<div class="mura__layout-manager__display-regions">
 		<div class="mura__layout-manager__display-regions__X">
 			<p><button id="mura-objects-closeregions-btn" class="btn mura-primary">Close <i class="mi-angle-right"></i></button><p>
@@ -137,8 +139,8 @@
 			<cfset regionCount=$.siteConfig('columnCount')>
 
 			<cfloop from="1" to="#regionCount#" index="r">
-			<cfif not listFind(request.muraActiveRegions,r) and listLen(regionNames,'^') gte r>
-				<div class="mura-region__item">
+			<cfif (not listFind(request.muraActiveRegions,r) || request.muraAPIRequest) and listLen(regionNames,'^') gte r>
+				<div class="mura-region__item" data-regionid="#r#">
 					<h4>#esapiEncode('html',listGetAt(regionNames,r,'^'))#</h4>
 					#$.dspObjects(columnid=r,allowInheritance=false)#
 				</div>

@@ -264,8 +264,12 @@
 
 						MuraInlineEditor.isDirty=true;
 					}
-
+					var perm=item.data('perm');
 					Mura.resetAsyncObject(item.node,false);
+					if(perm){
+						item.data('perm',perm);
+					}
+
 					item.addClass('mura-active');
 					Mura.processAsyncObject(item.node,false).then(function(){
 						closeFrontEndToolsModal();
@@ -357,38 +361,68 @@
 		return initFrontendUI(a,isnew);
 	};
 
+	var openToolbar=function(event){
+		if(!window.Mura.editing){
+			return;
+		}
+		var source = Mura(event.target || event.srcElement);
+
+		if(source.is('.frontEndToolsModal') ){
+			event.preventDefault();
+			event.stopPropagation();
+			openFrontEndToolsModal(this);
+		} else if(source.is('.mura-object') ){
+			event.preventDefault();
+			event.stopPropagation();
+			openFrontEndToolsModal(source.node);
+		} else if (!source.is('a, button, input, select, textarea')) {
+			var parentObj=source.closest('.mura-object');
+			if(parentObj.length){
+				event.preventDefault();
+				event.stopPropagation();
+				openFrontEndToolsModal(parentObj.children('.frontEndToolsModal').node);
+			}
+		}
+	};
+
 	var initFrontendUI=function(a,isnew){
+
+		if(typeof a=='undefined' || !a){
+			return false;
+		}
+
 		var src=a.href;
 		var editableObj=utility(a);
 		var targetFrame='modal';
 
 		//This is an advance look at the protential configurable object to see if it's a non-configurable component for form
-		if(utility(a).hasClass("mura-object")){
-			var tempCheck=utility(a);
-		} else {
-			var tempCheck=utility(a).closest(".mura-object,.mura-async-object");
-		}
-
-		var lcaseObject=tempCheck.data('object');
-		if(typeof lcaseObject=='string'){
-			lcaseObject=lcaseObject.toLowerCase();
-		}
-
-		//If the it's a form of component that's not configurable then go straight to edit it
-		if((lcaseObject=='form' || lcaseObject=='component') && tempCheck.data('notconfigurable')){
-			if(Mura.isUUID(tempCheck.data('objectid'))){
-					src=adminLoc + '?muraAction=cArch.editLive&compactDisplay=true&contentid=' + encodeURIComponent(tempCheck.data('objectid')) + '&type='+ encodeURIComponent(tempCheck.data('object')) + '&siteid='+  Mura.siteid + '&instanceid=' + encodeURIComponent(tempCheck.data('instanceid'));
+		if(!src)
+			if(editableObj.hasClass("mura-object")){
+				var editableObj=editableObj;
 			} else {
-					src=adminLoc + '?muraAction=cArch.editLive&compactDisplay=true&title=' + encodeURIComponent(tempCheck.data('objectid')) + '&type='+ encodeURIComponent(tempCheck.data('object')) + '&siteid=' + Mura.siteid + '&instanceid=' + encodeURIComponent(tempCheck.data('instanceid'));
+				var editableObj=editableObj.closest(".mura-object,.mura-async-object");
 			}
 
-		}
+			var lcaseObject=editableObj.data('object');
+			if(typeof lcaseObject=='string'){
+				lcaseObject=lcaseObject.toLowerCase();
+			}
+
+			//If the it's a form of component that's not configurable then go straight to edit it
+			if((lcaseObject=='form' || lcaseObject=='component') && editableObj.data('notconfigurable')){
+				MuraInlineEditor.sidebarAction('showobjects');
+
+				if(Mura.isUUID(editableObj.data('objectid'))){
+						src=adminLoc + '?muraAction=cArch.editLive&compactDisplay=true&contentid=' + encodeURIComponent(editableObj.data('objectid')) + '&type='+ encodeURIComponent(editableObj.data('object')) + '&siteid='+  Mura.siteid + '&instanceid=' + encodeURIComponent(editableObj.data('instanceid'));
+				} else {
+						src=adminLoc + '?muraAction=cArch.editLive&compactDisplay=true&title=' + encodeURIComponent(editableObj.data('objectid')) + '&type='+ encodeURIComponent(editableObj.data('object')) + '&siteid=' + Mura.siteid + '&instanceid=' + encodeURIComponent(editableObj.data('instanceid'));
+				}
+
+			}
 
 		//If there's no direct src to goto then we're going to assume it's a display object configurator
 		if(!src){
-			if(utility(a).hasClass("mura-object")){
-			var editableObj=utility(a);
-			} else {
+			if(editableObj.hasClass("mura-object")){
 				var editableObj=utility(a).closest(".mura-object,.mura-async-object");
 			}
 
@@ -397,11 +431,30 @@
 				values are present
 			*/
 
+			if(typeof Mura.currentObjectInstanceID != 'undefined' && Mura.currentObjectInstanceID == editableObj.data('instanceid')){
+				return;
+			}
+
+			Mura.currentObjectInstanceID= editableObj.data('instanceid');
+
 			editableObj=Mura('[data-instanceid="' + editableObj.data('instanceid') + '"]');
 			editableObj.hide().show();
 
 			Mura('.mura-object-select').removeClass('mura-object-select');
 			Mura('.mura-active-target').removeClass('mura-active-target');
+			Mura('.mura-container-active').removeClass('mura-container-active');
+
+			if(editableObj.data('object')=='container'){
+				editableObj.addClass('mura-container-active');
+			} else {
+				var container=editableObj.closest('div[data-object="container"]');
+				if(container.length){
+					var finder=container.find('div[data-instanceid="' + Mura.currentObjectInstanceID + '"]')
+					if(finder.length){
+						container.addClass('mura-container-active');
+					}
+				}
+			}
 			editableObj.addClass('mura-object-select');
 
 			var legacyMap={
@@ -431,6 +484,7 @@
 		}
 
 		if(targetFrame=='modal'){
+			editableObj=Mura(a);
 			var isModal=editableObj.attr("data-configurator");
 
 			//These are for the preview iframes
@@ -505,7 +559,7 @@
 				    return false;
 				});
 
-				utility("##frontEndToolsModalBody").css("top",(utility(document).scrollTop()+48) + "px")
+				utility("##frontEndToolsModalBody").css("top",(utility(document).scrollTop()+48) + "px");
 				resizeFrontEndToolsModal(frontEndModalHeight);
 			} else {
 
@@ -563,20 +617,29 @@
 			var frame = document.getElementById("frontEndToolsModaliframe");
 			var frameContainer = document.getElementById("frontEndToolsModalContainer");
 			var framesrc = frame.getAttribute('src');
+			var appliedHeight = 0;
+
+			var isEditText = framesrc.includes('cArch.edittext');
 			var isFullHeight = framesrc.includes('cArch.editLive') || framesrc.includes('cArch.edit');
 			var windowHeight = Math.max(frameHeight, utility(window).height());
 
 			utility('##frontEndToolsModalContainer ##frontEndToolsModalBody,##frontEndToolsModalContainer ##frontEndToolsModaliframe').width(frontEndModalWidth);
 
-			if (isFullHeight){
-				frame.style.height = utility(window).height()-96 + "px";
+			if (isEditText){
+				appliedHeight = Math.min(760, utility(window).height()-96);
+			} else if(isFullHeight) {
+				appliedHeight = utility(window).height()-96;
 			} else {
-				frame.style.height = frameHeight + "px";
+				appliedHeight = frameHeight;
 			}
 
+			frame.style.height = appliedHeight + "px";
 			frameContainer.style.position = "absolute";
 			document.overflow = "auto";
 
+//			console.log('appliedHeight: ' + appliedHeight);
+//			console.log('frameHeight: ' + frameHeight);
+//			console.log('isEditText: ' + isEditText);
 //			console.log('framesrc: ' + framesrc);
 //			console.log('isFullHeight: ' + isFullHeight);
 //			console.log('windowHeight: ' + windowHeight);
@@ -751,9 +814,10 @@
 			if(typeof Mura != 'undefined'){
 				var sheet=Mura.getStyleSheet('mura-inline-editor');
 				sheet.insertRule(
-					'.mura-region-local,	.mura-region-inherited {	min-height: 15px;	}',
+					'.mura-region-local, .mura-region-inherited, .mura-object {	min-height: 30px;	}',
 					sheet.cssRules.length
 				);
+
 			}
 
 			utility(document)
@@ -1201,11 +1265,7 @@
 
 			<cfif $.getContentRenderer().useLayoutManager()>
 			if(window.Mura.layoutmanager){
-				var openToolbar=function(event){
-					event.preventDefault();
-					//console.log("fet:" + 1106)
-					openFrontEndToolsModal(this);
-				};
+
 
 				Mura("img").each(function(){MuraInlineEditor.checkforImageCroppers(this);});
 
@@ -1221,10 +1281,18 @@
 					if(Mura.type =='Variation'){
 						objectParams=item.data();
 						item.children('.frontEndToolsModal').remove();
+						item.children('.mura-fetborder').remove();
 						item.prepend(window.Mura.layoutmanagertoolbar );
+						if(item.data('objectname')){
+							item.children('.frontEndToolsModal').children('.mura-edit-label').html(item.data('objectname'));
+						} else {
+							item.children('.frontEndToolsModal').children('.mura-edit-label').html(Mura.firstToUpperCase(item.data('object')));
+						}
+						if(item.data('objecticonclass')){
+							item.children('.frontEndToolsModal').children('.mura-edit-label').addClass(item.data('objecticonclass'));
+						}
 
-						item.find(".frontEndToolsModal")
-							.off("click",openToolbar)
+						item.off("click",openToolbar)
 							.on("click",openToolbar);
 
 
@@ -1243,10 +1311,19 @@
 								objectParams=item.data();
 								if(window.MuraInlineEditor.objectHasConfigurator(item) || (!window.Mura.layoutmanager && window.MuraInlineEditor.objectHasEditor(objectParams)) ){
 									item.children('.frontEndToolsModal').remove();
+									item.children('.mura-fetborder').remove();
 									item.prepend(window.Mura.layoutmanagertoolbar);
 
-									item.find(".frontEndToolsModal")
-										.off("click",openToolbar)
+									if(item.data('objectname')){
+										item.children('.frontEndToolsModal').children('.mura-edit-label').html(item.data('objectname'));
+									} else {
+										item.children('.frontEndToolsModal').children('.mura-edit-label').html(Mura.firstToUpperCase(item.data('object')));
+									}
+									if(item.data('objecticonclass')){
+										item.children('.frontEndToolsModal').children('.mura-edit-label').addClass(item.data('objecticonclass'));
+									}
+
+									item.off("click",openToolbar)
 										.on("click",openToolbar);
 
 									item.find("img").each(function(){MuraInlineEditor.checkforImageCroppers(this);});
@@ -1267,10 +1344,18 @@
 									);
 									item.data('notconfigurable',true);
 									item.children('.frontEndToolsModal').remove();
+									item.children('.mura-fetborder').remove();
 									item.prepend(window.Mura.layoutmanagertoolbar);
+									if(item.data('objectname')){
+										item.children('.frontEndToolsModal').children('.mura-edit-label').html(item.data('objectname'));
+									} else {
+										item.children('.frontEndToolsModal').children('.mura-edit-label').html(Mura.firstToUpperCase(item.data('object')));
+									}
+									if(item.data('objecticonclass')){
+										item.children('.frontEndToolsModal').children('.mura-edit-label').addClass(item.data('objecticonclass'));
+									}
 
-									item.find(".frontEndToolsModal")
-										.off("click",openToolbar)
+									item.off("click",openToolbar)
 										.on("click",openToolbar);
 
 									item.find("img").each(function(){MuraInlineEditor.checkforImageCroppers(this);});
@@ -1290,9 +1375,17 @@
 					var item=Mura(this);
 					item.addClass("mura-active");
 					item.children('.frontEndToolsModal').remove();
+					item.children('.mura-fetborder').remove();
 					item.prepend(window.Mura.layoutmanagertoolbar);
-					item.find(".frontEndToolsModal")
-						.off("click",openToolbar)
+					if(item.data('objectname')){
+						item.children('.frontEndToolsModal').children('.mura-edit-label').html(item.data('objectname'));
+					} else {
+						item.children('.frontEndToolsModal').children('.mura-edit-label').html(Mura.firstToUpperCase(item.data('object')));
+					}
+					if(item.data('objecticonclass')){
+						item.children('.frontEndToolsModal').children('.mura-edit-label').addClass(item.data('objecticonclass'));
+					}
+					item.off("click",openToolbar)
 						.on("click",openToolbar);
 				});
 
@@ -1422,6 +1515,7 @@
 						attribute.find('.mura-object').each(function(){
 							Mura.initDraggableObject(this);
 							Mura(this).addClass('mura-active')
+							Mura(this).on('click',Mura.handleObjectClick);
 						});
 
 						attribute.find('h1, h2, h3, h4, p, div, img, table, form, article').each(function(){
@@ -1589,7 +1683,6 @@
 									var objectid='';
 
 									delete params['instanceid'];
-									//delete params['objectname'];
 									delete params['objectid'];
 									delete params['isconfigurator'];
 									delete params['perm'];
@@ -1599,7 +1692,7 @@
 									delete params['runtime'];
 
 									if(!item.data('objectname')){
-										item.data('objectname',item.data('object'));
+										item.data('objectname',Mura.firstToUpperCase(item.data('object')));
 									}
 
 									objectid=item.data('objectid') || 'NA';
@@ -1729,20 +1822,26 @@
 
 								if(resp.success){
 					        	<cfif node.getType() eq 'Variation'>
-							        if(MuraInlineEditor.requestedURL){
-												location.href=MuraInlineEditor.requestedURL
-											} else {
+							        if(MuraInlineEditor.requestedURL && location.href != MuraInlineEditor.requestedURL){
+										location.href=MuraInlineEditor.requestedURL
+									} else {
 							        	location.reload();
-											}
+									}
 					        	<cfelse>
 					        		var resp = eval('(' + data + ')');
-					        		if(MuraInlineEditor.requestedURL && !(MuraInlineEditor.requestedURL.indexOf('previewid') > -1)){
-												location.href=MuraInlineEditor.requestedURL
-											} else if(location.href!=resp.location){
-												location.href=resp.location;
-											} else {
-												location.reload;
-											}
+					        		if(MuraInlineEditor.requestedURL   && MuraInlineEditor.requestedURL != location.href && !(MuraInlineEditor.requestedURL.indexOf('previewid') > -1) ){
+										location.href=MuraInlineEditor.requestedURL;
+										if(location.href.indexOf('##') > -1){
+											location.reload();
+										}
+									} else if(location.href!=resp.location){
+										location.href=resp.location;
+										if(location.href.indexOf('##') > -1){
+											location.reload();
+										}
+									} else {
+										location.reload();
+									}
 					        	</cfif>
 								} else {
 
@@ -1768,8 +1867,11 @@
 					        }
 					       });
 						} else {
-							if(MuraInlineEditor.requestedURL){
-								location.href=MuraInlineEditor.requestedURL
+							if(MuraInlineEditor.requestedURL && MuraInlineEditor.requestedURL != location.href){
+								location.href=MuraInlineEditor.requestedURL;
+								if(location.href.indexOf('##') > -1){
+									location.reload();
+								}
 							} else {
 								location.reload();
 							}
@@ -2242,16 +2344,22 @@
 		   return false;
 		},
 		sidebarAction:function(action){
+
 			if(action=='showobjects'){
+				Mura.currentObjectInstanceID='';
 				MuraInlineEditor.resetEditableAttributes();
 				Mura('.mura-object-selected').removeClass('mura-object-selected');
+				Mura('.mura-editable-attribute.mura-active').removeClass('mura-active');
+				Mura('.mura-container-active').removeClass('mura-container-active');
 				Mura('#mura-sidebar-configurator').hide();
 				Mura('#mura-sidebar-objects-legacy').hide();
 				Mura('#mura-sidebar-objects').show();
 				Mura('#mura-sidebar-editor').hide();
 			} else if(action=='showlegacyobjects'){
+				Mura.currentObjectInstanceID='';
 				MuraInlineEditor.resetEditableAttributes();
 				Mura('.mura-object-selected').removeClass('mura-object-selected');
+				Mura('.mura-container-active').removeClass('mura-container-active');
 				Mura('#mura-sidebar-configurator').hide();
 				Mura('#mura-sidebar-objects-legacy').show();
 				Mura('#mura-sidebar-objects').hide();
@@ -2263,19 +2371,27 @@
 				Mura('#mura-sidebar-objects').hide();
 				Mura('#mura-sidebar-editor').hide();
 			} else if(action=='showeditor'){
+				Mura.currentObjectInstanceID='';
 				Mura('.mura-object-selected').removeClass('mura-object-selected');
+				Mura('.mura-container-active').removeClass('mura-container-active');
 				Mura('#mura-sidebar-configurator').hide();
 				Mura('#mura-sidebar-objects-legacy').hide();
 				Mura('#mura-sidebar-objects').hide();
 				Mura('#mura-sidebar-editor').show();
 			} else if(action=='minimizesidebar'){
+				Mura.currentObjectInstanceID='';
 				Mura('#mura-sidebar-container').fadeOut();
 				Mura('body').removeClass('mura-sidebar-state__pushed--right')
+				Mura('body').removeClass('mura-editing')
 				Mura('.mura-object').removeClass('mura-active').addClass("mura-active-min");
 			} else if(action=='restoresidebar'){
+				Mura.currentObjectInstanceID='';
 				Mura('#mura-sidebar-container').fadeIn();
 				Mura('body').addClass('mura-sidebar-state__pushed--right');
+				Mura('body').raddClass('mura-editing')
 				Mura('.mura-object').removeClass('mura-active-min').addClass("mura-active");
+				Mura('.mura-container-active').removeClass('mura-container-active');
+
 			}
 
 		},
@@ -2334,7 +2450,7 @@
 	window.openFrontEndToolsModal=openFrontEndToolsModal;
 	window.themepath=window.themepath || Mura.themepath;
 	window.muraInlineEditor=window.MuraInlineEditor;
-
+	Mura.handleObjectClick=openToolbar;
 	Mura.initFrontendUI=initFrontendUI;
 
 	<cfif url.contenttype eq 'Variation'>

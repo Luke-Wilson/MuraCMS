@@ -68,15 +68,18 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 			allowfieldselect=false
 		});
 
+
 		registerEntity('content',{
 			public=true,
 			fields="links,images,parentid,moduleid,path,contentid,contenthistid,changesetid,siteid,active,approved,title,menutitle,summary,tags,type,subtype,displayStart,displayStop,display,filename,url,assocurl,isNew,remoteid,remoteurl"
 		});
 
+		/* the fields get switch up in the bean allowQueryParams(); */
 		registerEntity('comment',{
 			public=true,
 			moduleid='00000000000000000000000000000000015',
-			fields="links,entered,isspam,flagcount,parentid,name,isapproved,kids,isdeleted,userid,subscribe,isnew,contentid,path,siteid,id,remoteid,contenthistid"
+			allowfieldselect=true,
+			fields="comments,links,entered,isspam,flagcount,parentid,name,isapproved,kids,isdeleted,userid,subscribe,isnew,contentid,path,siteid,id,remoteid,contenthistid"
 		});
 
 		registerEntity('user',{public=false,moduleid='00000000000000000000000000000000008'});
@@ -2736,7 +2739,7 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 								} else if(propName=='or'){
 									relationship='or';
 								} else if(listFindNoCase('openGrouping,orOpenGrouping,andOpenGrouping,closeGrouping',propName)){
-									feed.addParam(relationship=p);
+									feed.addParam(relationship=propName);
 									relationship='and';
 								} else if(listFindNoCase('sum,avg,count,max,min,groupBy',propName)){
 									feed.aggregate(propName,params[p]);
@@ -3347,6 +3350,10 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 
 	function findRelatedContent(id='',siteid,params,arguments,expand='',expanded=0,entity='',relatedContentSetID='',expandedProp=''){
 		param name="arguments.params" default=url;
+	
+		if(len(arguments.relatedContentSetID)){
+			arguments.params.relatedContentSetID=arguments.relatedContentSetID;
+		}
 
 		var $=getBean('$').init(arguments.siteid);
 
@@ -3379,6 +3386,7 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 			if(isDefined('arguments.params.relatedContentSetID') && len(arguments.params.relatedContentSetID)){
 				args.relatedContentSetID=arguments.params.relatedContentSetID;
 			}
+
 		} else {
 			args.relatedContentSetID=arguments.relatedContentSetID;
 		}
@@ -3426,6 +3434,7 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 			return result;
 
 		} else {
+			
 			iterator=entity.getRelatedContentIterator(argumentCollection=args);
 			setIteratorProps(iterator,arguments.params);
 			returnArray=iteratorToArray(iterator=iterator,siteid=arguments.siteid,expand=arguments.expand,$=$,expanded=arguments.expanded,expandedProp='relatedcontent');
@@ -3446,55 +3455,65 @@ component extends="mura.cfobject" hint="This provides JSON/REST API functionalit
 		return trim(arguments.str);
 	}
 
+	function getCustomImageSizeIterator(siteid){
+		if(!isDefined('variables.images')){
+			variables.images=getBean('settingsManager').getSite(arguments.siteid).getCustomImageSizeIterator();
+		}
+		if(!isdefined('request.muracustomimageiterator')){
+			request.muraCustomImageIterator=duplicate(variables.images);
+		}
+
+		request.muraCustomImageIterator.reset();
+		
+		return request.muraCustomImageIterator;
+	}
+
 	function setImageURLs(entity,attr="fileid",$){
 
 		if(arguments.attr == 'fileid' && arguments.entity.hasImage()){
-			if(!isDefined('variables.images')){
-				variables.images=getBean('settingsManager').getSite(entity.getSiteID()).getCustomImageSizeIterator();
-			}
+
 
 			var secure=getBean('settingsManager').getSite(entity.getSiteID()).getUseSSL();
 
 			var returnStruct={
-				small=entity.getImageURL(secure=secure,complete=1,size='small'),
-				medium=entity.getImageURL(secure=secure,complete=1,size='medium'),
-				large=entity.getImageURL(secure=secure,complete=1,size='large'),
-				source=entity.getImageURL(secure=secure,complete=1,size='source')
+				small=arguments.entity.getImageURL(secure=secure,complete=1,size='small'),
+				medium=arguments.entity.getImageURL(secure=secure,complete=1,size='medium'),
+				large=arguments.entity.getImageURL(secure=secure,complete=1,size='large'),
+				source=arguments.entity.getImageURL(secure=secure,complete=1,size='source')
 			};
 
 			var image='';
+			var images=getCustomImageSizeIterator(arguments.entity.getSiteID());
 
-			while(variables.images.hasNext()){
-				image=variables.images.next();
-				returnStruct['#image.getName()#']=entity.getImageURL(secure=secure,complete=1,size=image.getName());
+			while(images.hasNext()){
+				image=images.next();
+				returnStruct['#image.getName()#']=arguments.entity.getImageURL(secure=secure,complete=1,size=image.getName());
 			}
-			variables.images.reset();
+
 		} else if (arguments.attr != 'fileid' && isValid('uuid',entity.get(arguments.attr)) ){
-			 var fileEXT=getBean("fileManager").readMeta(entity.get(arguments.attr)).fileEXT;
+			 var fileEXT=getBean("fileManager").readMeta(arguments.entity.get(arguments.attr)).fileEXT;
 			 if(ListFindNoCase('jpg,jpeg,png,gif,svg', fileEXT)){
 				 if(!isDefined('arguments.$')){
 					 arguments.$=getBean('$').init(arguments.entity.getSiteid());
 				 }
-				 if(!isDefined('variables.images')){
-					 variables.images=getBean('settingsManager').getSite(entity.getSiteID()).getCustomImageSizeIterator();
-				 }
+
 
 				 var image='';
-				 var secure=getBean('settingsManager').getSite(entity.getSiteID()).getUseSSL();
-				 var renderer=$.getContentRenderer();
+				 var images=getCustomImageSizeIterator(arguments.entity.getSiteID());
+				 var secure=getBean('settingsManager').getSite(arguments.entity.getSiteID()).getUseSSL();
+				 var renderer=arguments.$.getContentRenderer();
 
 				 var returnStruct={
-	 				small=renderer.getURLForImage(fileid=entity.get(arguments.attr),secure=secure,complete=1,size='small'),
-	 				medium=renderer.getURLForImage(fileid=entity.get(arguments.attr),secure=secure,complete=1,size='medium'),
-	 				large=renderer.getURLForImage(fileid=entity.get(arguments.attr),secure=secure,complete=1,size='large'),
-	 				source=renderer.getURLForImage(fileid=entity.get(arguments.attr),secure=secure,complete=1,size='source')
+	 				small=renderer.getURLForImage(fileid=arguments.entity.get(arguments.attr),secure=secure,complete=1,size='small'),
+	 				medium=renderer.getURLForImage(fileid=arguments.entity.get(arguments.attr),secure=secure,complete=1,size='medium'),
+	 				large=renderer.getURLForImage(fileid=arguments.entity.get(arguments.attr),secure=secure,complete=1,size='large'),
+	 				source=renderer.getURLForImage(fileid=arguments.entity.get(arguments.attr),secure=secure,complete=1,size='source')
 	 			};
 
-				 while(variables.images.hasNext()){
-					 image=variables.images.next();
-					 returnStruct['#image.getName()#']=renderer.getURLForImage(fileid=entity.get(arguments.attr),secure=secure,complete=1,size=image.getName(),fileExt=fileEXT);
+				 while(images.hasNext()){
+					 image=images.next();
+					 returnStruct['#image.getName()#']=renderer.getURLForImage(fileid=arguments.entity.get(arguments.attr),secure=secure,complete=1,size=image.getName(),fileExt=fileEXT);
 				 }
-				 variables.images.reset();
 			 } else {
 				 return returnStruct;
 			 }

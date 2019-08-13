@@ -91,6 +91,7 @@
 	var htmlEditorType='#application.configBean.getValue("htmlEditorType")#';
 	var context='#application.configBean.getContext()#';
 	var themepath='#application.settingsManager.getSite(rc.siteID).getThemeAssetPath()#';
+	var rootpath='#application.settingsManager.getSite(rc.siteID).getRootPath(complete=1)#';
 	var rb='#lcase(esapiEncode('javascript',session.rb))#';
 	var siteid='#esapiEncode('javascript',session.siteid)#';
 	var sessionTimeout=#evaluate("application.configBean.getValue('sessionTimeout') * 60")#;
@@ -98,6 +99,8 @@
 	var activetab=#esapiEncode('javascript',rc.activetab)#;
 	<cfif $.currentUser().isLoggedIn()>var webroot='#esapiEncode('javascript',left($.globalConfig("webroot"),len($.globalConfig("webroot"))-len($.globalConfig("context"))))#';</cfif>
 	var fileDelim='#esapiEncode('javascript',$.globalConfig("fileDelim"))#';
+	var themeColorOptions=#serializeJSON($.siteConfig().getContentRenderer().getColorOptions())#;
+	var moduleThemeOptions=#serializeJSON($.siteConfig().getContentRenderer().getModuleThemeOptions())#;
 	</script>
 
 	<!-- nice-select: select box replacement (sidebar controls) -->

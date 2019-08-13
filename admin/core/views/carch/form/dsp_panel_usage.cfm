@@ -44,7 +44,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 <cfset rsUsage=application.contentGateway.getUsage(rc.contentID,session.siteid)>
 <cfset tabList=listAppend(tabList,"tabUsagereport")>
 <cfoutput>
-<div class="mura-panel panel">
+<div class="mura-panel panel" id="tabUsagereport">
   <div class="mura-panel-heading" role="tab" id="heading-usagereport">
     <h4 class="mura-panel-title">
       <a class="collapse collapsed" role="button" data-toggle="collapse" data-parent="##content-panels" href="##panel-usagereport" aria-expanded="false" aria-controls="panel-usagereport">#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.tabs.usagereport")#</a>
@@ -55,9 +55,6 @@ version 2 without this exception.  You may, if you choose, apply this exception 
     <span id="extendset-container-tabusagereporttop" class="extendset-container"></span>
 
     <div class="mura-control-group">
-
-
-      <div id="usage__totals"></div>
       <!--- 'big ui' flyout panel --->
       <!--- todo: resource bundle key for 'see usage details' --->
       <div class="bigui" id="bigui__usage" data-label="<cfif rsUsage.recordcount>See Usage Details</cfif>">
@@ -96,6 +93,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
         </div>
       </div> <!--- /.bigui --->
     </div> <!--- /.mura-control-group --->
+<div class="bigui__preview"><div id="usage__totals"></div></div>
 
     <span id="extendset-container-usagereport" class="extendset-usagereport"></span>
     <span id="extendset-container-tabusagereportbottom" class="extendset-container"></span>

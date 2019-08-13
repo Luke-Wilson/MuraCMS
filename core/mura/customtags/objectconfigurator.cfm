@@ -30,6 +30,7 @@
 		<cfparam name="attributes.params.contentcssid" default="">
 		<cfparam name="attributes.params.cssid" default="">
 		<cfparam name="attributes.params.label" default="">
+		<cfparam name="attributes.params.labeltag" default="h2">
 		<cfparam name="attributes.params.object" default="">
 
 		<cfparam name="request.hasbasicoptions" default="false">
@@ -37,19 +38,9 @@
 		<cfparam name="request.haspositionoptions" default="false">
 		<cfparam name="attributes.params.isbodyobject" default="false">
 
-		<cfparam name="request.colorOptions" default="">
-		<cfif structKeyExists($.getContentRenderer(),'coloroptions')>
-			<cfset request.colorOptions = $.getContentRenderer().coloroptions>
-		<cfelseif structKeyExists($.getContentRenderer(),'colorArray')>
-			<cfset request.colorOptions = $.getContentRenderer().colorArray>
-		</cfif>
 
-		<cfparam name="request.modulethemeoptions" default="#arrayNew(1)#">
-		<cfif structKeyExists($.getContentRenderer(),'modulethemeoptions') and isArray($.getContentRenderer().modulethemeoptions)>
-			<cfset request.modulethemeoptions = $.getContentRenderer().modulethemeoptions>
-		<cfelseif structKeyExists($.getContentRenderer(),'modulethemeArray') and isArray($.getContentRenderer().modulethemeArray)>
-			<cfset request.modulethemeoptions = $.getContentRenderer().modulethemeArray>
-		</cfif>
+		<cfset request.colorOptions = $.getContentRenderer().getColorOptions()>
+		<cfset request.modulethemeoptions = $.getContentRenderer().getModuleThemeOptions()>
 
 		<cfset contentcontainerclass=esapiEncode("javascript",$.getContentRenderer().expandedContentContainerClass)>
 
@@ -85,40 +76,22 @@
 		</cfif>
 
 		<cfscript>
-		/*
-		.mura-one.mura-object                    { width: 8.33%; }
-		.mura-two.mura-object                    { width: 16.66%; }
-		.mura-three.mura-object                  { width: 25%;  }
-		.mura-four.mura-object                   { width: 33.33%; }
-		.mura-five.mura-object                   { width: 41.66%; }
-		.mura-six.mura-object                    { width: 50%; }
-		.mura-seven.mura-object                  { width: 58.33%; }
-		.mura-eight.mura-object                  { width: 66.66%; }
-		.mura-nine.mura-object                   { width: 75%; }
-		.mura-ten.mura-object                    { width: 83.33%; }
-		.mura-eleven.mura-object                 { width: 91.66%; }
-		.mura-twelve.mura-object                 { width: 100% }
-		.mura-one-third.mura-object               { width: 33.33%; }
-		.mura-two-thirds.mura-object              { width: 66.66%; }
-		.mura-one-half.mura-object                { width: 50%; }
-		*/
 			attributes.positionoptions = [
 					{value='',label='Auto'}
-					,{value='mura-one', label='One Twelfth',percent='8.33%'}
-					,{value='mura-two', label='One Sixth',percent='16.66%'}
-					,{value='mura-three', label='One Fourth',percent='25%'}
-					,{value='mura-four', label='One Third',percent='33.33%'}
-					,{value='mura-five', label='Five Twelfths',percent='41.66%'}
-					,{value='mura-six', label='One Half',percent='50%'}
-					,{value='mura-seven', label='Seven Twelfths',percent='58.33%'}
-					,{value='mura-eight', label='Two Thirds',percent='66.66%'}
-					,{value='mura-nine', label='Three Fourths',percent='75%'}
-					,{value='mura-ten', label='Five Sixths',percent='41.66%'}
-					,{value='mura-eleven', label='Eleven Twelfths',percent='91.66%'}
+					,{value='mura-one', label='1/12',percent='8.33%'}
+					,{value='mura-two', label='1/6',percent='16.66%'}
+					,{value='mura-three', label='1/4',percent='25%'}
+					,{value='mura-four', label='1/3',percent='33.33%'}
+					,{value='mura-five', label='5/12',percent='41.66%'}
+					,{value='mura-six', label='1/2',percent='50%'}
+					,{value='mura-seven', label='7/12',percent='58.33%'}
+					,{value='mura-eight', label='2/3',percent='66.66%'}
+					,{value='mura-nine', label='3/4',percent='75%'}
+					,{value='mura-ten', label='5/6',percent='41.66%'}
+					,{value='mura-eleven', label='11/12',percent='91.66%'}
 					,{value='mura-twelve', label='Full',percent='100%'}
 					,{value='mura-expanded', label='Expanded',percent='100%'}
 				];
-
 		</cfscript>
 
 	</cfsilent>
@@ -185,6 +158,8 @@
 		$(function(){
 
 			currentPanel="";
+			re="[^0-9\\-\\.]";
+			numRE = new RegExp(re,"g")
 			window.configuratorInited=false;
 
 			$('#panel-gds-object,.mura-panel-heading').click(function(){
@@ -219,6 +194,88 @@
 				});
 			});
 
+			$('.mura-panel-heading, .panel-gds-box').on('click',function(){
+				setConfigPanelStates();
+			})
+
+			$('.panel-gds-box').on('click',function(){
+				var gdspanel = $(this).attr('data-gdsel');
+				var gdstarget = $('#' + gdspanel);
+				$('.panel-gds-box').removeClass('active');
+				$(this).addClass('active');
+				$('#style-panels > .mura-panel > .panel-collapse.in').removeClass('in');
+				$(gdstarget).addClass('in');
+				return false;
+			})
+
+			function setActiveGDSpanel(){
+				var visiblekids = $('#style-panels > .mura-panel > .panel-collapse.in');
+				if (!visiblekids.length){
+					$('#panel-gds-object').trigger('click');
+				} else {
+					$('.panel-gds-box[data-gdsel="' + visiblekids[0].id + '"]').trigger('click');
+				}
+			}
+
+			// set panel state cookie
+			function setConfigPanelStates(){
+				var savedStates = JSON.parse(getConfigPanelStates());
+				var newStates = [];
+
+				for (i in savedStates){
+					if (newStates.length <= 10){
+						var item = savedStates[i];
+						if (item[0] != instanceid){
+							newStates.push(item);
+						}
+					}
+				}
+
+				setTimeout(function(){
+				 	var openPanels = $('#configurator-panels').find('.panel-collapse.in').map(function(){
+				 			return this.id;
+				 	}).get();
+				 	var thisArr = [instanceid,openPanels];
+				 	newStates.unshift(thisArr);
+				 	var str = JSON.stringify(newStates);
+				 	Mura.createCookie('mura_configpanelstate',encodeURIComponent(str));
+
+				},500);
+			}
+
+			// get panel state cookie
+			function getConfigPanelStates(){
+					var cps = Mura.readCookie('mura_configpanelstate');
+					if (cps == ''){
+						return JSON.stringify([]);
+					} else {
+						return cps;
+					}
+			}
+
+			// apply open panels
+			function applyConfigPanelStates(){
+					var cps = JSON.parse(getConfigPanelStates());
+
+					for (i in cps){
+						var savedinstanceid = cps[i][0];
+						var panelarr = cps[i][1];
+						if (panelarr.length && savedinstanceid == instanceid){
+							$('#configurator-panels').find('.panel-collapse.in').removeClass('in');
+							$('#configurator-panels').find('.mura-panel-title a.collapse').addClass('collapsed');
+							for (i in panelarr){
+								$('#'+ panelarr[i]).addClass('in').siblings('.mura-panel-heading').find('a.collapse').removeClass('collapsed');
+							}
+						}
+					}
+			}
+
+			// run on load
+			$('#style-panels').addClass('no-header');
+			$('#panel-style-object').addClass('in');
+			applyConfigPanelStates();
+			setActiveGDSpanel();
+
 			$('#labelText').change(function(item){
 				if(Mura.trim(Mura(this).val())){
 					Mura('#panel-gds-meta').show();
@@ -229,18 +286,6 @@
 					$('#panel-gds-object').addClass('active');
 				}
 			});
-
-			$('.panel-gds-box').on('click',function(){
-				var gdspanel = $(this).attr('data-gdsel');
-				var gdstarget = $('#' + gdspanel);
-				$('.panel-gds-box').removeClass('active');
-				$(this).addClass('active');
-				$('#style-panels').find('.panel-collapse.in').removeClass('in');
-				$(gdstarget).addClass('in');
-				return false;
-			})
-			$('#style-panels').addClass('no-header');
-			$('#panel-gds-object').trigger('click');
 
 			function updateDynamicClasses(){
 				var classInput=$('input[name="class"]');
@@ -285,7 +330,6 @@
 								}
 							}
 							contentcssclass.val(contentcssclassArray.join(' '));
-
 						}
 					} else {
 						$('.constraincontentcontainer').hide();
@@ -298,10 +342,8 @@
 						}
 						contentcssclass.val(contentcssclassArray.join(' '));
 					}
-
 					contentcssclass.val($.trim(contentcssclass.val()));
 				}
-
 				if(typeof updateDraft == 'function'){
 					updateDraft();
 				}
@@ -337,10 +379,10 @@
 
 			// Begin Object Margin and Padding
 			function updateObjectPadding(){
-				var t = $('#objectpaddingtop').val().replace(/[^0-9\-]/g,'');
-				var r = $('#objectpaddingright').val().replace(/[^0-9\-]/g,'');
-				var b = $('#objectpaddingbottom').val().replace(/[^0-9\-]/g,'');
-				var l =$('#objectpaddingleft').val().replace(/[^0-9\-]/g,'');
+				var t = $('#objectpaddingtop').val().replace(numRE,'');
+				var r = $('#objectpaddingright').val().replace(numRE,'');
+				var b = $('#objectpaddingbottom').val().replace(numRE,'');
+				var l =$('#objectpaddingleft').val().replace(numRE,'');
 				var u = $('#objectpaddinguom').val();
 				if (t.length){ $('#objectpaddingtopval').val(t + u); } else { $('#objectpaddingtopval').val(''); }
 				if (r.length){ $('#objectpaddingrightval').val(r + u); } else { $('#objectpaddingrightval').val(''); }
@@ -352,13 +394,11 @@
 					$('#objectpaddingall').val('');
 					$('#objectpaddingadvanced').show();
 				}
-
 				$('#objectpaddingtopval').trigger('change');
-
 			}
 
 			$('#objectpaddingall').on('keyup', function(){
-				var v = $('#objectpaddingall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#objectpaddingall').val().replace(numRE,'');
 				$('#objectpaddingadvanced').hide();
 				$('#objectpaddingtop').val(v);
 				$('#objectpaddingleft').val(v);
@@ -378,12 +418,12 @@
 
 			// margin
 			function updateObjectMargin(){
-				var t = $('#objectmargintop').val().replace(/[^0-9\-]/g,'');
+				var t = $('#objectmargintop').val().replace(numRE,'');
 				var r = $('#objectmarginright').val();
-				if(r != 'auto'){r=r.replace(/[^0-9\-]/g,'')}
-				var b = $('#objectmarginbottom').val().replace(/[^0-9\-]/g,'');
+				if(r != 'auto'){r=r.replace(numRE,'')}
+				var b = $('#objectmarginbottom').val().replace(numRE,'');
 				var l =$('#objectmarginleft').val();
-				if(l != 'auto'){l=l.replace(/[^0-9\-]/g,'')}
+				if(l != 'auto'){l=l.replace(numRE,'')}
 				var u = $('#objectmarginuom').val();
 				if (t.length){ $('#objectmargintopval').val(t + u); } else { $('#objectmargintopval').val(''); }
 				if(r=='auto'){
@@ -402,20 +442,23 @@
 				} else {
 					$('#objectmarginall').val('');
 					$('#objectmarginadvanced').show();
-
 				}
-
 				$('#objectmargintopval').trigger('change');
-
 			}
 
 			$('#objectmarginall').on('keyup', function(){
-				var v = $('#objectmarginall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#objectmarginall').val().replace(numRE,'');
 				$('#objectmarginadvanced').hide();
 				$('#objectmargintop').val(v);
 				$('#objectmarginleft').val(v);
 				$('#objectmarginright').val(v);
 				$('#objectmarginbottom').val(v);
+			})
+
+			$('a.input-auto').on('click',function(){
+				var ai = '#' + $(this).attr('data-auto-input');
+				$(ai).val('auto').trigger('keyup');
+				return false;
 			})
 
 			$('#objectmargintop,#objectmarginright,#objectmarginbottom,#objectmarginleft,#objectmarginall').on('keyup', function(){
@@ -430,16 +473,15 @@
 			});
 
 			updateObjectMargin();
-
 			//End Object Margin and Padding
 
-			<cfif request.hasmetaoptions and not (IsBoolean(attributes.params.isbodyobject) and attributes.params.isbodyobject)>
 			// Begin Meta Margin and Padding
+			<cfif request.hasmetaoptions and not (IsBoolean(attributes.params.isbodyobject) and attributes.params.isbodyobject)>
 			function updateMetaPadding(){
-				var t = $('#metapaddingtop').val().replace(/[^0-9\-]/g,'');
-				var r = $('#metapaddingright').val().replace(/[^0-9\-]/g,'');
-				var b = $('#metapaddingbottom').val().replace(/[^0-9\-]/g,'');
-				var l =$('#metapaddingleft').val().replace(/[^0-9\-]/g,'');
+				var t = $('#metapaddingtop').val().replace(numRE,'');
+				var r = $('#metapaddingright').val().replace(numRE,'');
+				var b = $('#metapaddingbottom').val().replace(numRE,'');
+				var l =$('#metapaddingleft').val().replace(numRE,'');
 				var u = $('#metapaddinguom').val();
 				if (t.length){ $('#metapaddingtopval').val(t + u); } else { $('#metapaddingtopval').val(''); }
 				if (r.length){ $('#metapaddingrightval').val(r + u); } else { $('#metapaddingrightval').val(''); }
@@ -451,13 +493,11 @@
 					$('#metapaddingall').val('');
 					$('#metapaddingadvanced').show();
 				}
-
 				$('#metapaddingtopval').trigger('change');
-
 			}
 
 			$('#metapaddingall').on('keyup', function(){
-				var v = $('#metapaddingall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#metapaddingall').val().replace(numRE,'');
 				$('#metapaddingadvanced').hide();
 				$('#metapaddingtop').val(v);
 				$('#metapaddingleft').val(v);
@@ -477,12 +517,12 @@
 
 			// margin
 			function updateMetaMargin(){
-				var t = $('#metamargintop').val().replace(/[^0-9\-]/g,'');
+				var t = $('#metamargintop').val().replace(numRE,'');
 				var r = $('#metamarginright').val();
-				if(r != 'auto'){r=r.replace(/[^0-9\-]/g,'')}
-				var b = $('#metamarginbottom').val().replace(/[^0-9\-]/g,'');
+				if(r != 'auto'){r=r.replace(numRE,'')}
+				var b = $('#metamarginbottom').val().replace(numRE,'');
 				var l =$('#metamarginleft').val();
-				if(l != 'auto'){l=l.replace(/[^0-9\-]/g,'')}
+				if(l != 'auto'){l=l.replace(numRE,'')}
 				var u = $('#metamarginuom').val();
 				if (t.length){ $('#metamargintopval').val(t + u); } else { $('#metamargintopval').val(''); }
 				if(r=='auto'){
@@ -501,15 +541,12 @@
 				} else {
 					$('#metamarginall').val('');
 					$('#metamarginadvanced').show();
-
 				}
-
 				$('#metamargintopval').trigger('change');
-
 			}
 
 			$('#metamarginall').on('keyup', function(){
-				var v = $('#metamarginall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#metamarginall').val().replace(numRE,'');
 				$('#metamarginadvanced').hide();
 				$('#metamargintop').val(v);
 				$('#metamarginleft').val(v);
@@ -529,16 +566,15 @@
 			});
 
 			updateMetaMargin();
-			// End Meta Margin and Padding
 			</cfif>
+			// End Meta Margin and Padding
 
 			// Begin Content Content Margin and Padding
-
 			function updateContentPadding(){
-				var t = $('#contentpaddingtop').val().replace(/[^0-9\-]/g,'');
-				var r = $('#contentpaddingright').val().replace(/[^0-9\-]/g,'');
-				var b = $('#contentpaddingbottom').val().replace(/[^0-9\-]/g,'');
-				var l =$('#contentpaddingleft').val().replace(/[^0-9\-]/g,'');
+				var t = $('#contentpaddingtop').val().replace(numRE,'');
+				var r = $('#contentpaddingright').val().replace(numRE,'');
+				var b = $('#contentpaddingbottom').val().replace(numRE,'');
+				var l =$('#contentpaddingleft').val().replace(numRE,'');
 				var u = $('#contentpaddinguom').val();
 				if (t.length){ $('#contentpaddingtopval').val(t + u); } else { $('#contentpaddingtopval').val(''); }
 				if (r.length){ $('#contentpaddingrightval').val(r + u); } else { $('#contentpaddingrightval').val(''); }
@@ -550,12 +586,11 @@
 					$('#contentpaddingall').val('');
 					$('#contentpaddingadvanced').show();
 				}
-
 				$('#contentpaddingtopval').trigger('change');
 			}
 
 			$('#contentpaddingall').on('keyup', function(){
-				var v = $('#contentpaddingall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#contentpaddingall').val().replace(numRE,'');
 				$('#contentpaddingadvanced').hide();
 				$('#contentpaddingtop').val(v);
 				$('#contentpaddingleft').val(v);
@@ -575,12 +610,12 @@
 
  			// margin
 			function updateContentMargin(){
-				var t = $('#contentmargintop').val().replace(/[^0-9\-]/g,'');
+				var t = $('#contentmargintop').val().replace(numRE,'');
 				var r = $('#contentmarginright').val();
-				if(r != 'auto'){r=r.replace(/[^0-9\-]/g,'')}
-				var b = $('#contentmarginbottom').val().replace(/[^0-9\-]/g,'');
+				if(r != 'auto'){r=r.replace(numRE,'')}
+				var b = $('#contentmarginbottom').val().replace(numRE,'');
 				var l =$('#contentmarginleft').val();
-				if(l != 'auto'){l=l.replace(/[^0-9\-]/g,'')}
+				if(l != 'auto'){l=l.replace(numRE,'')}
 				var u = $('#contentmarginuom').val();
 				if (t.length){ $('#contentmargintopval').val(t + u); } else { $('#contentmargintopval').val(''); }
 				if(r=='auto'){
@@ -594,21 +629,17 @@
 				} else {
 					if (l.length){ $('#contentmarginleftval').val(l + u); } else { $('#contentmarginleftval').val(''); }
 				}
-
 				if (t == r && r == b && b == l){
 					$('#contentmarginall').val(t);
 				} else {
 					$('#contentmarginall').val('');
 					$('#contentmarginadvanced').show();
-
 				}
-
 				$('#contentmargintopval').trigger('change');
-
 			}
 
 			$('#contentmarginall').on('keyup', function(){
-				var v = $('#contentmarginall').val().replace(/[^0-9\-]/g,'');
+				var v = $('#contentmarginall').val().replace(numRE,'');
 				$('#contentmarginadvanced').hide();
 				$('#contentmargintop').val(v);
 				$('#contentmarginleft').val(v);
@@ -628,12 +659,9 @@
 			});
 
 			updateContentMargin();
-
 			// End Content Content Margin and Padding
 
 			// Begin Object background
-
-
 			$('#objectminheightnum,#objectminheightoum').on('change',function(){
 				var el = $('#objectminheightuomval');
 				var str = $('#objectminheightuom').val();
@@ -641,9 +669,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#contentminheightnum,#contentminheightoum').on('change',function(){
@@ -653,9 +679,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			// background position x/y
@@ -673,20 +697,18 @@
 			$('#objectbackgroundimageurl').on('change',function(){
 				var v = $(this).val();
 				var str = "";
-				if (v.length > 3){
+				if (typeof v !='undefined' && v.length > 3){
 					str = "url('" + v + "')";
 					$('.object-css-bg-option').show();
 				} else {
 					$('.object-css-bg-option').hide();
 				}
-
 				$('#objectbackgroundimage').val(str).trigger('change');
-
 			});
 
 			var v = $('#objectbackgroundimageurl').val();
 			var str = "";
-			if (v.length > 3){
+			if (typeof v !='undefined' && v.length > 3){
 				str = "url('" + v + "')";
 				$('.object-css-bg-option').show();
 			} else {
@@ -702,9 +724,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#objectbackgroundpositionx,#objectbackgroundpositionxnum').on('change',function(){
@@ -714,9 +734,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#objectbackgroundpositionx,#objectbackgroundpositiony').on('change',function(){
@@ -726,36 +744,29 @@
 			$('#objectbackgroundpositionx,#objectbackgroundpositiony').each(function(){
 				updatePositionSelection($(this));
 			});
-
 			//End Object Background
-
 
 			// background image
 			$('#metabackgroundimageurl').on('change',function(){
 				var v = $(this).val();
 				var str = "";
-				if (v.length > 3){
+				if (typeof v != 'undefined' && v.length > 3){
 					str = "url('" + v + "')";
 					$('.meta-css-bg-option').show();
 				} else {
 					$('.meta-css-bg-option').hide();
 				}
-
 				$('#metabackgroundimage').val(str).trigger('change');
-
 			});
 
 			var v = $('#metabackgroundimageurl').val();
 			var str = "";
-			if (v.length > 3){
+			if (typeof v != 'undefined' && v.length > 3){
 				str = "url('" + v + "')";
 				$('.meta-css-bg-option').show();
 			} else {
 				$('.meta-css-bg-option').hide();
 			}
-
-			//$('#metabackgroundimageurl').trigger('change');
-
 
 			$('#metabackgroundpositiony,#metabackgroundpositionynum').on('change',function(){
 				var el = $('#metabackgroundpositionyval');
@@ -764,9 +775,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#metabackgroundpositionx,#metabackgroundpositionxnum').on('change',function(){
@@ -776,9 +785,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#metabackgroundpositionx,#metabackgroundpositiony').on('change',function(){
@@ -788,35 +795,29 @@
 			$('#metabackgroundpositionx,#metabackgroundpositiony').each(function(){
 				updatePositionSelection($(this));
 			});
-
 			//End Meta Background
 
 			// background image
 			$('#contentbackgroundimageurl').on('change',function(){
 				var v = $(this).val();
 				var str = "";
-				if (v.length > 3){
+				if (typeof v !='undefined' && v.length > 3){
 					str = "url('" + v + "')";
 					$('.content-css-bg-option').show();
 				} else {
 					$('.content-css-bg-option').hide();
 				}
-
 				$('#contentbackgroundimage').val(str).trigger('change');
-
 			});
 
 			var v = $('#contentbackgroundimageurl').val();
 			var str = "";
-			if (v.length > 3){
+			if (typeof v !='undefined' && v.length > 3){
 				str = "url('" + v + "')";
 				$('.content-css-bg-option').show();
 			} else {
 				$('.content-css-bg-option').hide();
 			}
-
-		//	$('#contentbackgroundimageurl').trigger('change');
-
 
 			$('#contentbackgroundpositiony,#contentbackgroundpositionynum').on('change',function(){
 				var el = $('#contentbackgroundpositionyval');
@@ -825,9 +826,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#contentbackgroundpositionx,#contentbackgroundpositionxnum').on('change',function(){
@@ -837,9 +836,7 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			$('#contentbackgroundpositionx,#contentbackgroundpositiony').on('change',function(){
@@ -849,7 +846,6 @@
 			$('#contentbackgroundpositionx,#contentbackgroundpositiony').each(function(){
 				updatePositionSelection($(this));
 			});
-
 			//End Object Background
 
 			$('#contentwidthnum,#contentwidthuom').on('change',function(){
@@ -859,22 +855,29 @@
 				if (num.length > 0){
 					str = num + str;
 				}
-
 				$(el).val(str).trigger('change');
-
 			});
 
 			// numeric input - select on focus
 			$('#configuratorContainer input.numeric').on('click', function(){
 				$(this).select();
 			});
+
 			// numeric input - restrict value
 			$('#configuratorContainer input.numeric').on('keyup', function(){
 				var v = $(this).val();
-				if(!(v=='a' || v=='au' || v=='aut'|| v=='auto')){
-					v=v.replace(/[^0-9\-]/g,'');
-					$(this).val(v);
+				var n = $(this).attr('name').toLowerCase();
+				if (n == 'contentmarginleft' || n == 'contentmarginright' || n == 'metamarginleft' || n == 'metamarginright'){
+					if (v == 'a'){
+						v = 'auto';
+					}
+					if(!(v=='a' || v=='au' || v=='aut'|| v=='auto')){
+						v=v.replace(numRE,'');
+					}
+				} else {
+					v=v.replace(numRE,'');
 				}
+				$(this).val(v);
 			});
 
 			// range sliders

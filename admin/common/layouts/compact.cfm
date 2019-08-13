@@ -106,8 +106,10 @@
 		#session.dateKey#
 		<script type="text/javascript">
 
-			var resizeTabPane = function(offsetVal=17){
-
+			var resizeTabPane = function(offsetVal){
+					if (isNaN(offsetVal)){
+						offsetVal = 17;
+					}
 				// set width of pane relative to side controls
 				if ($('##mura-content-body-block').length){
 
@@ -131,11 +133,11 @@
 					var newBlockH = origBlockH - statusH;
 					var newTabH = origTabH - statusH + 90;
 					var newControlsH = origControlsH - statusH + 12;
-				
+
 					$('##mura-content-body-block').css('height',newBlockH);
 					$(tabContent).css('height',newTabH);
 					$(controls).css('height',newControlsH);
-				}	
+				}
 
 			}
 
@@ -166,7 +168,7 @@
 
 
 				//nice-select
-				$('.mura__edit__controls .mura-control-group select').niceSelect();
+				$('.mura__edit__controls .mura-control-group select:not(.multiSelect)').niceSelect();
 
 				// tabdrop: trigger on page load w/ slight delay
 				if ( $( '.mura-tabs').length ) {

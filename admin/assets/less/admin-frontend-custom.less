@@ -3,6 +3,9 @@
 	  background-image: none!important;
 	  background-color: rgba(255,255,255,.8)!important;
 	}
+	#frontEndToolsModalTarget{
+		position: static !important;
+	}
 
 	#frontEndToolsModalContainer {
 	 /* position: [Set in dialog.js]; */
@@ -30,9 +33,10 @@
 
 	#frontEndToolsModaliframe {
 	  width: 100%;
-	  min-height: 450px;
+	  min-height: 360px;
 	  background: transparent;
 	  .border-radius(2px);
+	  box-shadow: 0 20px 50px 0 rgba(0,0,0,.3);
 	}
 
 	.modal-configurator #frontEndToolsModaliframe {
@@ -255,7 +259,7 @@
 			min-width: 72px !important;
 
 			&> a {
-				background-color: @mura-blue !important;
+				background-color: @mura-red !important;
 				border-radius: 0 !important;
 				}
 			}
@@ -453,20 +457,23 @@
 		font-style: normal !important;
 		line-height: 30px !important;
 		list-style: none !important;
+		margin: 0 !important;
 		min-width: 95px !important;
-		position: relative;
-		text-align: left;
+		position: relative !important;
+		text-align: left !important;
+		margin: 0 !important;
 
 			> a {
-			background-color: @mura-blue !important;
+			background-color: @mura-red !important;
 			background-image: none !important;
-			border-color: #4882cc;
+			border-color: #4882cc !important;
 			color: @white !important;
 			cursor: pointer !important;
 			display: inline-block !important; 
 			font-size: @feToolbarFontSize !important;
-			padding: 2px 12px !important;
+			padding: 0 12px 2px 12px !important;
 			position: relative !important;
+			margin: 0 !important;
 
 			&:hover {
 
@@ -490,10 +497,16 @@
 				cursor: default !important;						
 
 				i{	
-					-webkit-animation: fa-spin 2s infinite linear;
-					animation: fa-spin 2s infinite linear;	
-					font-size: @feToolbarFontSize !important;				
-					margin-right: 1px !important;
+					-webkit-animation: fa-spin 1.6s infinite linear;
+					animation: fa-spin 1.6s infinite linear;	
+					margin-left: -1px !important;
+					margin-right: 3px !important;
+					/* font-size: @feToolbarFontSize !important; */
+
+					&:before{
+						content:'\f110';
+					}
+
 				}
 
 				&:hover i{

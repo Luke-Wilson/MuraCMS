@@ -44,7 +44,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 <cfset started=false>
 <cfset tabList=listAppend(tabList,"tabBasic")>
 <cfoutput>
-<div class="mura-panel panel">
+<div class="mura-panel panel" id="tabBasic">
 	<div class="mura-panel-heading" role="tab" id="heading-basic">
 		<h4 class="mura-panel-title">
 			<a class="collapse collapsed" role="button" data-toggle="collapse" data-parent="##content-panels" href="##panel-basic" aria-expanded="true" aria-controls="panel-basic">#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.tabs.basic")#</a>
@@ -69,20 +69,15 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 						    	>
 						    	#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.fields.title")# <i class="mi-question-circle"></i></span>
 						    </label>
-						   	<cfset hasSEOTab=rc.moduleid eq '00000000000000000000000000000000000' and (not len(tabAssignments) or listFindNocase(tabAssignments,'SEO'))>
-							<input type="text" id="title" name="title" value="#esapiEncode('html_attr',rc.contentBean.gettitle())#"  maxlength="255" required="true" message="#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.titlerequired')#" <cfif hasSEOTab and not rc.contentBean.getIsNew()>onkeypress="openDisplay('editAdditionalTitles','#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.close')#');"</cfif>>
+							<input type="text" id="title" name="title" value="#esapiEncode('html_attr',rc.contentBean.gettitle())#"  maxlength="255" required="true" message="#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.titlerequired')#" <cfif not rc.contentBean.getIsNew()>onkeypress="openDisplay('editAdditionalTitles','#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.close')#');"</cfif>>
 							<div id="alertTitleSuccess" class="help-block" style="display:none;">#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.seotitlescleared')# </div>
 
-							<cfif hasSEOTab>
 								<div class="help-block" id="editAdditionalTitles" style="display:none;">
 									<p>#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.fields.AdditionalTitlesnote")#</p><br />
 									<button type="button" id="resetTitles" name="resetTitles" class="btn">#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.clearseotitles')#</button>
 								</div>
-							</cfif>
 
 						 </div>
-
-						<cfif hasSEOTab>
 
 							<div id="mura-seo-titles">
 								<div class="mura-control-group">
@@ -126,7 +121,6 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 
 							</div><!-- /mura-seo-titles -->
 
-						</cfif>
 					</cfcase>
 					<cfdefaultcase>
 						<div class="mura-control-group">
@@ -143,19 +137,19 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 				<!--- content parent --->
 				<cfif ((rc.parentid neq '00000000000000000000000000000000001' and application.settingsManager.getSite(rc.siteid).getlocking() neq 'all') or (rc.parentid eq '00000000000000000000000000000000001' and application.settingsManager.getSite(rc.siteid).getlocking() eq 'none')) and rc.contentid neq '00000000000000000000000000000000001'>
 
-
-
 					<cfif application.settingsManager.getSite(rc.siteid).getlocking() neq 'all'>
 						<div class="mura-control-group">
-				      		<label>
-					  			#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.contentparent')#
-			      			</label>
-			      			<div class="mura-control justify">
-				  				<cfif arrayLen(rc.crumbData) gt 1>
+			      		<label>
+				  			#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.contentparent')#
+		      			</label>
+		      			<div class="mura-control justify">
+			  				<cfif arrayLen(rc.crumbData) gt 1>
+			  					<div class="bigui__preview">
 				  					<div id="newparent-label">
 					      			"<span><cfif rc.contentBean.getIsNew()>#rc.crumbData[1].menutitle#<cfelse>#rc.crumbData[2].menutitle#</cfif></span>"
 					  				</div>
-				  				</cfif>
+			  					</div>
+			  				</cfif>
 
 								<!--- 'big ui' flyout panel --->
 								<div class="bigui" id="bigui__selectparent" data-label="#esapiEncode('html_attr',application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.selectnewparent'))#">
@@ -204,6 +198,9 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 
 						<!--- set up body content --->
 						<cfsavecontent variable="bodyContent">
+
+					   <span id="extendset-container-tabprimarytop" class="extendset-container"></span>
+
 							<div id="bodyContainer" class="body-container mura-control-group" style="display:none;">
 								<label>
 					      	#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.fields.content")#
@@ -275,19 +272,27 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 									</script>
 								</cfif>
 							</cfif>
+
+					   <span id="extendset-container-primary" class="extendset-container"></span>
+					   <span id="extendset-container-tabprimarybottom" class="extendset-container"></span>
 						</div>
 						<div id="noBodyContainer" class="no-body-container mura-control-group" style="display:none;">
-							<div class="block">
-									<div class="help-block-empty">	
-									This content type does not include a body.
+						   <span id="extendset-container-tabprimarytop" class="extendset-container"></span>
+								<div class="block">
+									<div class="help-block-empty">
+									Content body unavailable for type #$.content('type')#/#$.content('subtype')#
 									</div>
-								</div>	
-							</div>
+								</div>
+						   <span id="extendset-container-primary" class="extendset-container"></span>
+						   <span id="extendset-container-tabprimarybottom" class="extendset-container"></span>
 						</div>
 					</cfsavecontent>
 
 				<cfelseif rc.type eq 'Link'>
 					<cfsavecontent variable="bodyContent">
+
+			   <span id="extendset-container-tabprimarytop" class="extendset-container"></span>
+
 					<div class="mura-control-group">
 					     <h2>
 				      		#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.fields.url")#
@@ -300,7 +305,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 				     	 				 	<i class="mi-folder-open"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.browseassets')#
 				 	 				</a>
 				 	 				<ul class="dropdown-menu">
-				 	 					<li><a href="##" type="button" data-completepath="false" data-target="body" data-resourcetype="user" class="mura-file-type-selector mura-ckfinder" title="Select a File from Server">
+				 	 					<li><a href="##" type="button" data-completepath="false" data-target="body" data-resourcetype="user" class="mura-file-type-selector mura-finder" title="Select a File from Server">
 				     	 						<i class="mi-folder-open"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.local')#</a></li>
 				 	 					<li><a href="##" type="button" onclick="renderRazunaWindow('body');return false;" class="mura-file-type-selector btn-razuna-icon" value="URL-Razuna" title="Select a File from Razuna"><i></i> Razuna</a></li>
 				 	 				</ul>
@@ -310,10 +315,14 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 							<div class="mura-control justify">
 								<div class="mura-input-set">
 									<input type="text" id="url" name="body" value="#esapiEncode('html_attr',rc.contentBean.getbody())#" class="text mura-5" required="true" message="#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.urlrequired')#">
-				     	 			<button type="button" data-completepath="false" data-target="body" data-resourcetype="user" class="btn mura-file-type-selector mura-ckfinder" title="Select a File from Server"><i class="mi-folder-open"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.browseassets')#</button>
+				     	 			<button type="button" data-completepath="false" data-target="body" data-resourcetype="user" class="btn mura-file-type-selector mura-finder" title="Select a File from Server"><i class="mi-folder-open"></i> #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.browseassets')#</button>
 					     	 	</div>
 				     	 	</div>
 						</cfif>
+
+				   <span id="extendset-container-primary" class="extendset-container"></span>
+				   <span id="extendset-container-tabprimarybottom" class="extendset-container"></span>
+
 			     	</div>
 			     </cfsavecontent>
 				<cfelseif rc.type eq 'File'>

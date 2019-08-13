@@ -43,7 +43,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 --->
 <cfset tabList=listAppend(tabList,"tabSummary")>
 <cfoutput>
-<div class="mura-panel panel">
+<div class="mura-panel panel" id="tabSummary">
 	<div class="mura-panel-heading" role="tab" id="heading-summary">
 		<h4 class="mura-panel-title">
 			<a class="collapse collapsed" role="button" data-toggle="collapse" data-parent="##content-panels" href="##panel-summary" aria-expanded="true" aria-controls="panel-summary">#application.rbFactory.getKeyValue(session.rb,"sitemanager.content.fields.summary")#</a>
@@ -52,7 +52,6 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 	<div id="panel-summary" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-summary" aria-expanded="false" style="height: 0px;">
 		<div class="mura-panel-body">
 
-<!--- todo: add new tabs extendset containers to layout UI/Tab selection --->
 			<span id="extendset-container-tabsummarytop" class="extendset-container"></span>
 
 			<!--- metadata --->
@@ -98,12 +97,12 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 
 					<cfif listFind("Gallery,Link,Folder,Page,Calendar",rc.type)>
 						<span class="meta-label">
-				      	#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.currentfilename')#: 
+				      	#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.currentfilename')#:
 						<cfif rc.contentBean.getContentID() eq "00000000000000000000000000000000001">#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.emptystring')#<cfelseif len(rc.contentID) and len(rc.contentBean.getcontentID())><span class="clicktocopy">#rc.contentBean.getFilename()#</span><cfelse>#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.notavailable')#</cfif>
 						</span>
 					</cfif>
 					<span class="meta-label meta-label-wide">
-				      #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.contentid')#: 
+				      #application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.contentid')#:
 				      <cfif len(rc.contentID) and len(rc.contentBean.getcontentID())><span class="clicktocopy">#rc.contentBean.getcontentID()#</span><cfelse>#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.notavailable')#</cfif>
 				    </span>
 
@@ -177,12 +176,11 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 								<label>#application.rbFactory.getKeyValue(session.rb,'sitemanager.content.fields.keywords')#</label>
 								<textarea name="metakeywords" rows="3" id="metakeywords">#esapiEncode('html',rc.contentBean.getMetaKeywords())#</textarea>
 							</div>
-						<cfelse>
+						</cfif>
 							<div class="mura-control-group">
 								<label>Canonical URL</label>
 								<input type="text" id="canonicalURL" name="canonicalURL" value="#esapiEncode('html_attr',rc.contentBean.getCanonicalURL())#"  maxlength="255">
-								</div>
-						</cfif>
+							</div>
 					</cfif>
 
 				</cfif>
@@ -196,9 +194,12 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 					<textarea name="notes" rows="3" id="abstract">#esapiEncode('html',rc.contentBean.getNotes())#</textarea>
 				</div> <!--- /end mura-control-group --->
 
+			<span id="extendset-container-summary" class="extendset-container"></span>
+			<span id="extendset-container-tabsummarybottom" class="extendset-container"></span>
+
 		</div>
 	</div>
-</div> 
+</div>
 
 
 

@@ -126,16 +126,16 @@
 						cssClass=cssClass & "mura-inactive mura-editable-attribute#inline#";
 
 						return '<div class="mura-region mura-region-loose mura-editable mura-inactive#inline#">
-							<label class="mura-editable-label" style="display:none;">#ucase(arguments.label)#</label>
 							<div id="mura-editable-attribute-#arguments.attribute#" class="#cssClass#" #dataString#>#arguments.value#</div>
+							<label class="mura-editable-label" style="display:none;">#ucase(arguments.label)#</label>
 							</div>';
 					} else {
 
 						cssClass=cssClass & "mura-inactive mura-editable-attribute#inline#";
 
 						return '<div class="mura-editable mura-inactive#inline#">
-							<label class="mura-editable-label" style="display:none;">#ucase(arguments.label)#</label>
 							<div id="mura-editable-attribute-#arguments.attribute#" class="#cssClass#" #dataString#>#arguments.value#</div>
+							<label class="mura-editable-label" style="display:none;">#ucase(arguments.label)#</label>
 							</div>';
 
 					}
@@ -144,8 +144,8 @@
 					cssClass=cssClass & "mura-inactive mura-editable-attribute#inline#";
 
 					return '<div class="mura-editable mura-inactive#inline#">
-						<label class="mura-editable-label" style="display:none">#ucase(arguments.label)#</label>
 						<div contenteditable="false" id="mura-editable-attribute-#arguments.attribute#" class="#cssClass#" #dataString#>#arguments.value#</div>
+						<label class="mura-editable-label" style="display:none">#ucase(arguments.label)#</label>
 						</div>';
 
 				}
@@ -1461,13 +1461,14 @@
 			<cfelse>
 				<cfset var regionLabel=arguments.columnid>
 			</cfif>
-			<cfset theRegion.header='<div class="mura-region">'>
+			<cfset theRegion.regionid=arguments.columnID>
+			<cfset theRegion.header='<div class="mura-region" data-regionid="#arguments.columnID#">'>
 			<cfset theRegion.footer='</div>'>
 
-			<cfset theRegion.local.header='<div class="mura-editable mura-inactive"><div class="mura-region-local mura-inactive mura-editable-attribute" data-loose="false" data-regionid="#arguments.columnid#" data-inited="false" data-perm="#perm#"><label class="mura-editable-label" style="display:none" >DISPLAY REGION : #regionLabel#</label>'>
+			<cfset theRegion.local.header='<div class="mura-editable mura-inactive"><div class="mura-region-local mura-inactive mura-editable-attribute" data-loose="false" data-regionid="#arguments.columnid#" data-inited="false" data-perm="#perm#"><label class="mura-editable-label" style="display:none">#regionLabel#</label>'>
 			<cfset theRegion.local.footer='</div></div>'>
-
-			<cfset theRegion.inherited.header='<div class="mura-region-inherited">'>
+			<!--- todo: rb key for inherited --->
+			<cfset theRegion.inherited.header='<div class="mura-region-inherited"><div class="frontEndToolsModal mura"><span class="mura-edit-label mi-lock">#regionLabel#: Inherited</span></div>'>
 			<cfset theRegion.inherited.footer='</div>'>
 
 		<cfelse>
@@ -1477,7 +1478,7 @@
 			<cfset theRegion.local.header='<div class="mura-region-local">'>
 			<cfset theRegion.local.footer='</div>'>
 
-			<cfset theRegion.inherited.header='<div class="mura-region-inherited">'>
+			<cfset theRegion.inherited.header='<div class="mura-region">'>
 			<cfset theRegion.inherited.footer='</div>'>
 		</cfif>
 
@@ -1486,18 +1487,26 @@
 					or (event.getValue('r').restrict and event.getValue('r').allow)))
 						and not (listFindNoCase('search,editprofile,login',event.getValue('display')) and arguments.renderer.getSite().getPrimaryColumn() eq arguments.columnid)>
 
-			<cfif arguments.allowInheritance and event.getValue('contentBean').getinheritObjects() eq 'inherit'
+			<cfset var doInheritance=listFindNoCase(event.getValue('contentBean').getinheritObjects(),'inherit')>
+
+			<cfif doInheritance and listLen(event.getValue('contentBean').getinheritObjects()) gt 1>
+				<cfset doInheritance=listFindNoCase(event.getValue('contentBean').getinheritObjects(),arguments.columnid)>
+			</cfif>
+
+			<cfif arguments.allowInheritance and doInheritance
 				and event.getValue('inheritedObjects') neq ''
 				and event.getValue('contentBean').getcontenthistid() eq arguments.contentHistID>
 					<cfset rsObjects=getBean('contentGateway').getObjectInheritance(arguments.columnID,event.getValue('inheritedObjects'),event.getValue('siteID'))>
 					<cfset request.muraRegionObjectCounts['region#arguments.columnID#']=rsObjects.recordcount>
 					<cfloop query="rsObjects">
 						<cfset theObject=arguments.renderer.dspObject(object=rsObjects.object,objectid=rsObjects.objectid,siteid=event.getValue('siteID'), params=rsObjects.params, assignmentid=event.getValue('inheritedObjects'), regionid=arguments.columnID, orderno=rsObjects.orderno, hasConfigurator=len(rsObjects.configuratorInit),assignmentPerm=inheritedObjectsPerm,objectname=rsObjects.name,returnformat=objectReturnFormat)>
-						<cfif isSimpleValue(theObject)>
-							<cfset theObject={html=theObject}>
+						<cfif not(objectReturnFormat eq 'struct' and arguments.renderer.uselayoutmanager() and isSimpleValue(theObject))>
+							<cfif isSimpleValue(theObject)>
+								<cfset theObject={html=theObject}>
+							</cfif>
+							<cfset arrayAppend(theRegion.inherited.items,theObject) />
+							<cfset request.muraRegionID=arguments.columnID>
 						</cfif>
-						<cfset arrayAppend(theRegion.inherited.items,theObject) />
-						<cfset request.muraRegionID=arguments.columnID>
 					</cfloop>
 			</cfif>
 
@@ -1505,11 +1514,13 @@
 			<cfset request.muraRegionObjectCounts['region#arguments.columnID#']=request.muraRegionObjectCounts['region#arguments.columnID#'] + rsObjects.recordcount>
 			<cfloop query="rsObjects">
 				<cfset theObject=arguments.renderer.dspObject(object=rsObjects.object,objectid=rsObjects.objectid,siteid=event.getValue('siteID'), params=rsObjects.params, assignmentid=arguments.contentHistID, regionid=arguments.columnID, orderno=rsObjects.orderno, hasConfigurator=len(rsObjects.configuratorInit),assignmentPerm=$.event('r').perm,objectname=rsObjects.name,returnformat=objectReturnFormat,RenderingAsRegion=true)>
-				<cfif isSimpleValue(theObject)>
-					<cfset theObject={html=theObject}>
+					<cfif not(objectReturnFormat eq 'struct' and arguments.renderer.uselayoutmanager() and isSimpleValue(theObject))>
+					<cfif isSimpleValue(theObject)>
+						<cfset theObject={html=theObject}>
+					</cfif>
+					<cfset arrayAppend(theRegion.local.items,theObject) />
+					<cfset request.muraRegionID=arguments.columnID>
 				</cfif>
-				<cfset arrayAppend(theRegion.local.items,theObject) />
-				<cfset request.muraRegionID=arguments.columnID>
 			</cfloop>
 		</cfif>
 		<cfset request.muraRegionID=0>
