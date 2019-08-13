@@ -205,6 +205,7 @@ component extends="controller" output="false" {
 		param default="" name="arguments.rc.moduleID";
 		param default="copy" name="arguments.rc.bundleImportKeyMode";
 		param default="" name="arguments.rc.BundleName";
+		param default=false name="arguments.rc.includeStructuredAssets";
 		param default=false name="arguments.rc.includeTrash";
 		param default=false name="arguments.rc.includeVersionHistory";
 		param default=false name="arguments.rc.includeMetaData";
@@ -214,6 +215,7 @@ component extends="controller" output="false" {
 		param default=false name="arguments.rc.saveFile";
 		param default="" name="arguments.rc.saveFileDir";
 		param default="" name="arguments.rc.bundleMode";
+
 		if ( len(arguments.rc.saveFileDir) ) {
 			if ( directoryExists(arguments.rc.saveFileDir) ) {
 				arguments.rc.saveFile=true;
@@ -227,6 +229,7 @@ component extends="controller" output="false" {
 			moduleID=arguments.rc.moduleID,
 			BundleName=arguments.rc.BundleName,
 			includeVersionHistory=arguments.rc.includeVersionHistory,
+			includeStructuredAssets=arguments.rc.includeStructuredAssets,
 			includeTrash=arguments.rc.includeTrash,
 			includeMetaData=arguments.rc.includeMetaData,
 			includeMailingListMembers=arguments.rc.includeMailingListMembers,
