@@ -201,6 +201,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 	<cffunction name="bundleFiles">
 		<cfargument name="siteID" type="string" default="" required="true">
 		<cfargument name="includeVersionHistory" type="boolean" default="true" required="true">
+		<cfargument name="includeStructuredAssets" type="boolean" default="true" required="true">
 		<cfargument name="includeTrash" type="boolean" default="true" required="true">
 		<cfargument name="moduleID" type="string" default="" required="true">
 		<cfargument name="sinceDate" type="any" default="">
@@ -233,8 +234,14 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		--->
 
 		<cfif arguments.bundleMode neq 'plugin' and len(arguments.siteID)>
-			<cfset  getBean("fileManager").cleanFileCache(arguments.siteID)>
-			<cfset variables.zipTool.AddFiles(zipFilePath="#variables.backupDir#sitefiles.zip",directory=siteRoot,recurse="true",sinceDate=arguments.sinceDate)>
+			
+			<!--- If we are not including structured assets, then exclude the assets and cache directories from being zipped into sitefiles.zip --->
+			<cfif NOT arguments.includeStructuredAssets>
+				<cfset variables.zipTool.AddFiles(zipFilePath="#variables.backupDir#sitefiles.zip",directory=siteRoot,recurse="true",sinceDate=arguments.sinceDate,excludeDirs="assets|cache")> 
+			<cfelse>
+				<cfset getBean("fileManager").cleanFileCache(arguments.siteID)>
+				<cfset variables.zipTool.AddFiles(zipFilePath="#variables.backupDir#sitefiles.zip",directory=siteRoot,recurse="true",sinceDate=arguments.sinceDate)>
+			</cfif>
 
 			<!--- If the theme does not live in the site directory add it from the global directory --->
 			<cfif (not directoryExists(expandPath($.siteConfig().getIncludePath() & "/includes/themes/#$.siteConfig('theme')#"))
@@ -563,6 +570,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfargument name="pluginMode" type="any" required="true" default="all">
 		<cfargument name="sinceDate" type="any" required="true" default="">
 		<cfargument name="keyMode" type="string" default="copy" required="true">
+		<cfargument name="hasStructuredAssets" type="boolean" default="true" required="true">
 		<cfargument name="themeDir" type="string" default="" required="true">
 
 		<cfset var zipPath = "" />
@@ -594,9 +602,14 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 					<cfset variables.utility.deleteDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & '/' & "assets"  )>
 					--->
 					<cftry>
-					<cfset variables.utility.deleteDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache"  )>
-					<cfset variables.utility.createDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache"  )>
-					<cfset variables.utility.createDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache/file"  )>
+						<!--- Potentially want to delete and recreate the /cache/ and /cache/file/ directories when we are including structured assets (e.g. NOT for content only bundles) --->
+						<cfif arguments.hasStructuredAssets>
+							<cfset variables.utility.deleteDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache"  )>
+							<!--- Check if the createDir will error if a dir already exists --->
+							<cfset variables.utility.createDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache"  )>
+							<cfset variables.utility.createDir( variables.configBean.getValue('filedir') & '/'  & filePoolID & "/cache/file"  )>
+						</cfif>
+
 					<cfcatch></cfcatch>
 					</cftry>
 				</cfif>
@@ -693,6 +706,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 		<cfargument name="siteID" type="string" default="" required="true">
 		<cfargument name="includeVersionHistory" type="boolean" default="true" required="true">
 		<cfargument name="includeTrash" type="boolean" default="true" required="true">
+		<cfargument name="includeStructuredAssets" type="boolean" default="true" required="true">
 		<cfargument name="includeMetaData" type="boolean" default="true" required="true">
 		<cfargument name="moduleID" type="string" default="" required="true">
 		<cfargument name="bundleName" type="string" default="" required="true">
@@ -1332,6 +1346,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 			<cfset setValue("rstfiles",rstfiles)>
 
 			<cfset setValue("hasmetadata",arguments.includeMetaData)>
+			<cfset setValue("hasstructuredassets",arguments.includeStructuredAssets)>
 
 			<cfif arguments.includeMetaData and not len(arguments.changesetID) and not len(arguments.parentid)>
 				<cfquery name="rstcontentstats">
