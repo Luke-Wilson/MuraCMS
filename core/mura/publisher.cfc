@@ -245,7 +245,7 @@ version 2 without this exception.  You may, if you choose, apply this exception 
 			<cfif arguments.keyMode eq "copy" and arguments.contentMode eq "all">
 				<cfset arguments.Bundle.renameFiles( arguments.toSiteID,arguments.keyFactory,arguments.toDSN ) />
 			</cfif>
-			<cfif arguments.contentMode neq "none">
+			<cfif arguments.contentMode neq "none" AND hasStructuredAssets>
 				<cfset getBean("fileManager").cleanFileCache(arguments.toSiteID)>
 			</cfif>
 			<cfif arguments.contentMode neq 'none'>
